@@ -1,0 +1,155 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>補貨建議計算器</title><style>
+:root{--bg:#fff9f3;--card:#fff;--ink:#3d352f;--muted:#8c7d70;--accent:#e9904f;--soft:#fff0df;--line:#eadfd4;--danger:#d75d50;--ok:#5f8f72}*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#fff7ef,#fffdf9);font-family:system-ui,-apple-system,"Segoe UI","Noto Sans TC",sans-serif;color:var(--ink)}.wrap{max-width:1180px;margin:auto;padding:28px 18px 60px}h1{margin:0 0 6px;font-size:28px}.sub{color:var(--muted);margin-bottom:20px}.controls,.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}.box,.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 6px 20px #7b57300c}.box label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}.box input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:16px}.stat b{display:block;font-size:24px;margin-top:3px}.stat span{font-size:13px;color:var(--muted)}.note{background:var(--soft);border-radius:14px;padding:12px 14px;margin:12px 0 18px;font-size:14px;line-height:1.65}.tablebox{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:16px}table{border-collapse:collapse;width:100%;min-width:920px}th,td{padding:11px 10px;border-bottom:1px solid #f0e7df;text-align:center;font-size:14px}th{position:sticky;top:0;background:#fff6ed;color:#6e5d50}td:first-child,th:first-child{text-align:left}.num{width:72px;border:1px solid var(--line);border-radius:8px;padding:7px;text-align:center}.need{font-weight:800;color:var(--danger)}.zero{color:var(--muted)}.tag{display:inline-block;padding:4px 8px;border-radius:99px;font-size:12px}.high{background:#ffe4df;color:#a23d32}.watch{background:#fff0d4;color:#9a671a}.join{background:#eef0ff;color:#5960a8}.enough{background:#e9f5ed;color:#477459}.dead{background:#f1f1f1;color:#777}.actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}button{border:0;border-radius:11px;padding:10px 16px;font-weight:700;cursor:pointer;background:var(--accent);color:#fff}button.secondary{background:#fff;border:1px solid var(--line);color:var(--ink)}@media(max-width:760px){.controls,.summary{grid-template-columns:1fr 1fr}h1{font-size:23px}}@media(max-width:460px){.controls,.summary{grid-template-columns:1fr}}
+.tabs{display:flex;gap:8px;margin:18px 0;flex-wrap:wrap}.section-row td{background:#fff0df;color:#6e5d50;font-weight:800;text-align:left!important;font-size:15px;padding:12px 14px}.tab{background:#fff;border:1px solid var(--line);color:var(--ink)}.tab.active{background:var(--accent);color:#fff}.page-title{margin:0 0 6px;font-size:22px}.toast{position:fixed;left:50%;bottom:36px;transform:translate(-50%,20px);background:#3d352f;color:#fff;padding:11px 20px;border-radius:999px;font-weight:700;box-shadow:0 8px 24px #0002;opacity:0;pointer-events:none;transition:.22s ease;z-index:9999}.toast.show{opacity:1;transform:translate(-50%,0)}</style></head><body><div class="wrap"><h1>📦 蝦皮(台灣廠)補貨建議計算器</h1><div class="sub">依近期銷速、現有庫存與到貨等待期，自動估算建議補貨數量。</div>
+<div class="tabs"><button class="tab active" data-page="rice" onclick="switchPage('rice')">🍜 米粉</button><button class="tab" data-page="natural" onclick="switchPage('natural')">🌿 自然風</button><button class="tab" data-page="lekelai" onclick="switchPage('lekelai')">🧃 樂客來</button></div>
+<h2 class="page-title" id="pageTitle">米粉</h2>
+<div class="controls"><div class="box"><label>銷量統計天數</label><input id="period" type="number" value="60" min="1"></div><div class="box"><label>到貨等待天數（保守抓最慢）</label><input id="lead" type="number" value="7" min="0"></div><div class="box"><label>安全庫存天數</label><input id="safe" type="number" value="7" min="0"></div><div class="box"><label>最低補貨量（有需求時）</label><input id="minq" type="number" value="1" min="1"></div><div class="box"><label>一起補貨門檻（天）</label><input id="joinThreshold" type="number" value="18" min="0"></div><div class="box"><label>一起補貨目標天數</label><input id="joinTarget" type="number" value="21" min="0"></div></div>
+<div class="summary"><div class="stat"><span>建議補貨總數</span><b id="total">0</b></div><div class="stat"><span>需要補貨 SKU</span><b id="skus">0</b></div><div class="stat"><span>高風險 SKU</span><b id="risk">0</b></div><div class="stat"><span>目標備貨天數</span><b id="cover">14 天</b></div></div>
+<div class="note"><b>計算方式：</b>平均日銷量＝近 60 天銷量 ÷ 60；安全庫存＝平均日銷量 × 7 天；一般建議補貨＝（平均日銷量 × 到貨等待 7 天）＋安全庫存 7 天－目前庫存，無條件進位，也就是一般補到約 14 天庫存。庫存可售天數介於一般補貨線（14 天）與「一起補貨門檻」（預設 18 天）時，標示為「可一起補貨」，並補到「一起補貨目標天數」（預設 21 天）。近期銷量為 0 時預設不補貨。</div>
+<div class="actions"><button onclick="resetData()">數值歸零</button><button class="secondary" onclick="printInventory()">列印盤點單</button><button class="secondary" onclick="copyList()">複製補貨明細</button></div>
+<div class="tablebox"><table><thead><tr><th>品號</th><th>品名</th><th>60天銷量</th><th>庫存</th><th>日均銷量</th><th>庫存可售天數</th><th>建議補貨</th><th>狀態</th></tr></thead><tbody id="tb"></tbody></table></div></div>
+<div id="toast" class="toast">已複製！</div><script>
+const riceRaw=[["EAT02001","粗☆大米米粉_一箱 (18公斤)",0,0],["EAT02002","細★大米米粉_一箱 (18公斤)",0,0],["EAT02101","❶粗(E)☆一公斤",0,0],["EAT02102","❷細(G)★一公斤",0,0],["EAT02201","❸粗(E)☆《500克》",0,0],["EAT02202","❹細(G)★《500克》",0,0],["EAT02301","❺粗(E)☆【100克】",0,0],["EAT02302","❻細(G)★【100克】",0,0],["EAT03001","❼黑芝麻《500克》",0,0],["EAT03002","❽黑芝麻【100克】",0,0],["EAT03101","❾米含量低(一公斤)",0,0],["EAT03201","①⓪紅薯粉絲(一公斤)",0,0],["EAT03301","【紅袋】大米米粉_細100克(較短)",0,0],["EAT04001","❶❶越南河粉△寬版《500克》",0,0],["EAT04002","❶❷越南河粉▲細版《500克》",0,0],["EAT04003","❶❸越南米線《500克》",0,0]];
+const naturalRaw=[
+["__section__","聯夏調理包｜一箱24入",0,0],
+["EAT00101","日式咖哩牛",0,0],
+["EAT00102","黑胡椒牛腩",0,0],
+["EAT00103","日式咖哩雞",0,0],
+["EAT00104","東坡肉",0,0],
+["EAT00105","宮保雞丁",0,0],
+["EAT00106","義式海鮮醬",0,0],
+["EAT00107","義式茄汁肉醬",0,0],
+["EAT00108","蔬菜百匯",0,0],
+["EAT00109","茄汁雞丁",0,0],
+["__section__","馬桶清潔球Bref【WeYu】｜一箱72入",0,0],
+["EAT0040121","茉莉香",0,0],
+["EAT0040122","甜橙香",0,0],
+["EAT0040123","白桃香",0,0],
+["EAT0040124","花香",0,0],
+["__section__","Tree herb｜一箱138入",0,0],
+["EAT01501","天然草本護齦牙膏(80g)",0,0]
+];
+const lekelaiRaw=[
+["DRI02001","水果濃縮 - 蘋果｜一箱6入<br>(最低叫貨10箱)",0,0,0,0],
+["DRI02002","水果濃縮 - 荔枝｜一箱6入<br>(最低叫貨10箱)",0,0,0,0],
+["DRI02003","水果濃縮 - 水蜜桃｜一箱6入<br>(最低叫貨10箱)",0,0,0,0],
+["EAT00902","珍珠｜一箱360入<br>(最低叫貨25箱)",0,0,0,0],
+["EAT01201","櫻花晶球｜一箱6入<br>(最低叫貨20箱)",0,0,0,0]
+];
+let current='rice';
+function data(){return current==='natural'?naturalRaw:current==='lekelai'?lekelaiRaw:riceRaw}
+function switchPage(p){current=p;document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.page===p));pageTitle.textContent=p==='natural'?'自然風':p==='lekelai'?'樂客來':'米粉';draw()}
+function draw(){
+  let d=data();
+  const head=document.querySelector('thead tr');
+  if(current==='lekelai'){
+    head.innerHTML='<th>品號</th><th>品名</th><th>香藝<br>60天銷量</th><th>蝦皮<br>60天銷量</th><th>總銷量</th><th>香藝庫存</th><th>蝦皮庫存</th><th>總庫存</th><th>日均銷量</th><th>庫存可售天數</th><th>建議補貨</th><th>狀態</th>';
+    tb.innerHTML=d.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td><input class="num sales fragrance-sales" value="${r[2]}" type="number" min="0"></td><td><input class="num sales shopee-sales" value="${r[3]}" type="number" min="0"></td><td class="total-sales">0</td><td><input class="num stock fragrance-stock" value="${r[4]}" type="number" min="0"></td><td><input class="num stock shopee-stock" value="${r[5]}" type="number" min="0"></td><td class="total-stock">0</td><td class="daily"></td><td class="days"></td><td class="qty"></td><td class="status"></td></tr>`).join('');
+  }else{
+    head.innerHTML='<th>品號</th><th>品名</th><th>60天銷量</th><th>庫存</th><th>日均銷量</th><th>庫存可售天數</th><th>建議補貨</th><th>狀態</th>';
+    tb.innerHTML=d.map((r,i)=>r[0]==='__section__'?`<tr class="section-row"><td colspan="8">${r[1]}</td></tr>`:`<tr><td>${r[0]}</td><td>${r[1]}</td><td><input class="num sales" value="${r[2]}" type="number" min="0"></td><td><input class="num stock" value="${r[3]}" type="number" min="0"></td><td class="daily"></td><td class="days"></td><td class="qty"></td><td class="status"></td></tr>`).join('');
+  }
+  document.querySelectorAll('.controls input').forEach(x=>x.addEventListener('input',calc));
+  loadData();
+  document.querySelectorAll('.sales,.stock').forEach(x=>x.addEventListener('input',()=>{calc();saveData()}));
+  const inputs=[...document.querySelectorAll('.sales,.stock')];
+  inputs.forEach((x,i)=>x.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();if(i<inputs.length-1){inputs[i+1].focus();inputs[i+1].select()}}}));
+  calc()
+}
+function calc(){
+let p=+period.value||60,l=+lead.value||0,s=+safe.value||0,m=+minq.value||1,target=l+s,
+jt=+joinThreshold.value||0,jgoal=+joinTarget.value||target,T=0,S=0,R=0;
+cover.textContent=target+' 天';
+[...tb.rows].forEach(tr=>{
+if(tr.classList.contains('section-row'))return;
+let sale,st;
+if(current==='lekelai'){
+  sale=(+tr.querySelector('.fragrance-sales').value||0)+(+tr.querySelector('.shopee-sales').value||0);
+  st=(+tr.querySelector('.fragrance-stock').value||0)+(+tr.querySelector('.shopee-stock').value||0);
+  tr.querySelector('.total-sales').textContent=sale;
+  tr.querySelector('.total-stock').textContent=st;
+}else{
+  sale=+tr.querySelector('.sales').value||0;
+  st=+tr.querySelector('.stock').value||0;
+}
+let d=sale/p;
+let days=d?st/d:Infinity;
+let normalQ=sale===0?0:Math.max(0,Math.ceil(d*target-st));
+let q=normalQ;
+let label,cls;
+if(sale===0){label='近期無銷量';cls='dead';q=0}
+else if(days<l){label='高風險';cls='high';R++}
+else if(days<target){label='建議補貨';cls='watch'}
+else if(days<=jt){label='可一起補貨';cls='join';q=Math.max(0,Math.ceil(d*jgoal-st))}
+else{label='庫存足夠';cls='enough';q=0}
+if(q>0)q=Math.max(q,m);
+tr.querySelector('.daily').textContent=d.toFixed(2);
+tr.querySelector('.days').textContent=isFinite(days)?Math.round(days)+' 天':'—';
+tr.querySelector('.qty').innerHTML=q?`<span class="need">${q}</span>`:`<span class="zero">0</span>`;
+tr.querySelector('.status').innerHTML=`<span class="tag ${cls}">${label}</span>`;
+T+=q;if(q)S++
+});
+total.textContent=T;skus.textContent=S;risk.textContent=R
+}
+
+function printInventory(){
+  const rows=data();
+  const title=pageTitle.textContent+'｜盤點單';
+  const esc=v=>String(v).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  let n=0;const body=rows.map(r=>r[0]==='__section__'?`<tr><td colspan="4" style="font-weight:800;background:#f3f3f3;text-align:left">${esc(r[1])}</td></tr>`:`<tr><td>${++n}</td><td>${esc(r[0])}</td><td class="name">${esc(r[1])}</td><td class="count"></td></tr>`).join('');
+  const w=window.open('','_blank');
+  if(!w){alert('瀏覽器阻擋了列印視窗，請允許此網頁開啟彈出式視窗後再試一次。');return;}
+  w.document.write(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>${esc(title)}</title><style>
+    @page{size:A4;margin:12mm}*{box-sizing:border-box}body{font-family:system-ui,-apple-system,"Segoe UI","Noto Sans TC",sans-serif;color:#222;margin:0}h1{font-size:22px;margin:0 0 6px;text-align:center}.meta{font-size:12px;margin:0 0 12px;text-align:right;color:#555}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #555;padding:8px 7px;font-size:12px;height:36px}th{background:#f3f3f3;text-align:center}th:nth-child(1),td:nth-child(1){width:8%;text-align:center}th:nth-child(2),td:nth-child(2){width:22%;text-align:center}th:nth-child(3),td:nth-child(3){width:50%}.name{text-align:left}th:nth-child(4),td:nth-child(4){width:20%}.count{height:38px}thead{display:table-header-group}tr{page-break-inside:avoid}@media print{.no-print{display:none}}
+  </style></head><body><h1>${esc(title)}</h1><div class="meta">列印日期：${new Date().toLocaleDateString('zh-TW')}</div><table><thead><tr><th>序號</th><th>品號</th><th>品名</th><th>盤點數量</th></tr></thead><tbody>${body}</tbody></table><script>window.onload=()=>{setTimeout(()=>window.print(),150)}<\/script></body></html>`);
+  w.document.close();
+}
+
+function copyList(){calc();let a=[];[...tb.rows].forEach(tr=>{if(tr.classList.contains('section-row'))return;let q=+tr.querySelector('.qty').innerText||0;if(q)a.push(`${tr.cells[1].innerText} × ${q}包`)});navigator.clipboard.writeText(a.length?`【${pageTitle.textContent}補貨建議】\n`+a.join('\n'):'目前無需補貨').then(()=>showToast())}
+function showToast(){toast.classList.add('show');clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>toast.classList.remove('show'),1500)}
+function saveData(){
+  const saved=JSON.parse(localStorage.getItem('restockCalculatorData')||'{}');
+  saved[current]=[...tb.rows].filter(tr=>!tr.classList.contains('section-row')).map(tr=>{
+    const base={code:tr.cells[0].innerText};
+    if(current==='lekelai'){
+      return {...base,
+        fragranceSales:+tr.querySelector('.fragrance-sales').value||0,
+        shopeeSales:+tr.querySelector('.shopee-sales').value||0,
+        fragranceStock:+tr.querySelector('.fragrance-stock').value||0,
+        shopeeStock:+tr.querySelector('.shopee-stock').value||0
+      };
+    }
+    return {...base,sales:+tr.querySelector('.sales').value||0,stock:+tr.querySelector('.stock').value||0};
+  });
+  localStorage.setItem('restockCalculatorData',JSON.stringify(saved));
+}
+function loadData(){
+  const saved=JSON.parse(localStorage.getItem('restockCalculatorData')||'{}');
+  const rows=saved[current];
+  if(!rows)return;
+  [...tb.rows].filter(tr=>!tr.classList.contains('section-row')).forEach((tr,i)=>{
+    const code=tr.cells[0].innerText;
+    const row=rows.find?.(x=>x.code===code)||rows[i];
+    if(!row)return;
+    if(current==='lekelai'){
+      tr.querySelector('.fragrance-sales').value=row.fragranceSales??0;
+      tr.querySelector('.shopee-sales').value=row.shopeeSales??0;
+      tr.querySelector('.fragrance-stock').value=row.fragranceStock??0;
+      tr.querySelector('.shopee-stock').value=row.shopeeStock??0;
+    }else{
+      tr.querySelector('.sales').value=row.sales??0;
+      tr.querySelector('.stock').value=row.stock??0;
+    }
+  });
+}
+function resetData(){
+  [...tb.rows].forEach(tr=>{
+    if(tr.classList.contains('section-row'))return;
+    tr.querySelectorAll('.sales,.stock').forEach(x=>x.value=0);
+  });
+  saveData();
+  calc();
+}
+
+draw();
+</script></body></html>
